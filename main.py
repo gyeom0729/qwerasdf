@@ -1,31 +1,52 @@
 import streamlit as st
+import random
 
-st.title("간단 끝말잇기 게임")
+st.title("베스킨라빈스 31 게임 🎲")
 
-if "prev_word" not in st.session_state:
-    st.session_state.prev_word = None
-if "used_words" not in st.session_state:
-    st.session_state.used_words = []
+if "current_num" not in st.session_state:
+    st.session_state.current_num = 0
+if "turn" not in st.session_state:
+    st.session_state.turn = "user"  # user 또는 computer
 
-def get_last_char(word):
-    return word[-1]
+def computer_move(current):
+    # 컴퓨터가 부를 숫자 개수 결정 (1~3)
+    # 간단 전략: 현재 숫자 + (1~3) 중에서 31에 가까워지는 수 선택
+    target = 31
+    for i in range(1, 4):
+        if current + i == target:
+            return i
+    # 아니면 랜덤
+    return random.randint(1,3)
 
-def get_first_char(word):
-    return word[0]
+st.write(f"현재 숫자: **{st.session_state.current_num}**")
+st.write(f"턴: **{st.session_state.turn}**")
 
-user_word = st.text_input("단어 입력", key="input")
+if st.session_state.turn == "user":
+    count = st.number_input("몇 개의 숫자를 부르시겠어요? (1~3)", min_value=1, max_value=3, step=1)
+    if st.button("말하기"):
+        # 사용자 차례
+        next_num = st.session_state.current_num + count
+        if next_num >= 31:
+            st.error(f"{next_num}을 부르셨네요. 당신이 졌습니다! 😢")
+            st.session_state.current_num = 0
+            st.session_state.turn = "user"
+            st.experimental_rerun()
+        else:
+            st.session_state.current_num = next_num
+            st.session_state.turn = "computer"
+            st.experimental_rerun()
 
-if st.button("제출"):
-    if not user_word:
-        st.warning("단어를 입력해 주세요!")
-    elif user_word in st.session_state.used_words:
-        st.warning("이미 사용한 단어입니다!")
-    elif st.session_state.prev_word and get_first_char(user_word) != get_last_char(st.session_state.prev_word):
-        st.warning(f"이전 단어의 마지막 글자 '{get_last_char(st.session_state.prev_word)}'로 시작하는 단어를 입력하세요!")
+else:
+    # 컴퓨터 차례
+    comp_count = computer_move(st.session_state.current_num)
+    next_num = st.session_state.current_num + comp_count
+    st.write(f"컴퓨터가 {comp_count}개 숫자를 부릅니다.")
+    if next_num >= 31:
+        st.success(f"컴퓨터가 {next_num}을 부르면서 졌습니다! 당신이 이겼어요! 🎉")
+        st.session_state.current_num = 0
+        st.session_state.turn = "user"
+        st.experimental_rerun()
     else:
-        st.session_state.used_words.append(user_word)
-        st.session_state.prev_word = user_word
-        st.success(f"좋아요! '{user_word}' 입력 완료!")
-
-st.write("이전 단어:", st.session_state.prev_word if st.session_state.prev_word else "없음")
-st.write("사용한 단어들:", ", ".join(st.session_state.used_words))
+        st.session_state.current_num = next_num
+        st.session_state.turn = "user"
+        st.experimental_rerun()
